@@ -24,17 +24,28 @@ static uint32_t test_pass = 0;
 #define EXPECT_EQ_INT(expect, actual) \
     EXPECT_EQ_BASE((expect)==(actual), expect, actual)
 
-static void test_parse_null() {
+#define TEST_PARSE_VALUE(type, status, str)         \
+    do {                                            \
+        EXPECT_EQ_INT(status, json->parse(str));    \
+        EXPECT_EQ_INT(type, json->get_type());      \
+    } while (0);
+
+static void test() {
     tihi::JsonValue::ptr json_value 
         = tihi::JsonValue::ptr(new tihi::JsonValue);
     tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
-    EXPECT_EQ_INT(tihi::Json::PARSE_OK, json->parse("null"));
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_NULL, json->get_type());
+
+
+    TEST_PARSE_VALUE(tihi::JsonValue::JSON_NULL, tihi::Json::PARSE_OK, "null");
+    TEST_PARSE_VALUE(tihi::JsonValue::JSON_NULL, 
+                     tihi::Json::PARSE_OK, "null  ");
+    TEST_PARSE_VALUE(tihi::JsonValue::JSON_NULL, 
+                     tihi::Json::PARSE_ROOT_NOT_SINGULAR, "null  \r\n");
+    TEST_PARSE_VALUE(tihi::JsonValue::JSON_NULL, 
+                     tihi::Json::PARSE_ROOT_NOT_SINGULAR, "null  l");
 }
 
-static void test() {
-    test_parse_null();
-}
+
 
 int main(int argc, char** argv) {
     test();
