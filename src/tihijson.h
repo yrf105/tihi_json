@@ -53,6 +53,8 @@ public:
 private:
     STATUS parse_value(const std::string& str);
     STATUS parse_null(const std::string& str);
+    STATUS parse_false(const std::string& str);
+    STATUS parse_true(const std::string& str);
 
 private:
     JsonValue::ptr m_value;
