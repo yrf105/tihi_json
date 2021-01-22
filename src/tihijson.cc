@@ -6,6 +6,50 @@ namespace tihi {
 Json::Json(JsonValue::ptr value, JsonContxt::ptr context)
     : m_value(value), m_context(context) {}
 
+JsonValue::Type Json::get_type() const {
+    if (!m_value) {
+        return JsonValue::JSON_ERROR;
+    }
+    return m_value->get_type();
+}
+
+JsonValue::ptr Json::get_value() const {
+    return m_value;
+}
+
+
+void Json::set_type(JsonValue::Type v) {
+    if (m_value) {
+        m_value->set_type(v);
+    }
+}
+
+double Json::get_number() const {
+    if (!m_value) {
+        return 0;
+    }
+    return m_value->get_number();
+}
+
+void Json::set_number(double v) {
+    if (m_value) {
+        m_value->set_number(v);
+    }
+}
+
+const std::string& Json::get_str() const {
+    if (!m_value) {
+        return m_value->get_str();
+    }
+    return m_value->get_str();
+}
+
+void Json::set_str(std::string str) {
+    if (m_value) {
+        m_value->set_str(str);
+    }
+}
+
 Json::STATUS Json::parse(const std::string& str) {
     if (str.empty()) {
         return PARSE_EXPECT_VALUE;
@@ -38,32 +82,6 @@ Json::STATUS Json::parse(const std::string& str) {
     return ret;
 }
 
-JsonValue::Type Json::get_type() const {
-    if (!m_value) {
-        return JsonValue::JSON_ERROR;
-    }
-    return m_value->get_type();
-}
-
-void Json::set_type(JsonValue::Type v) {
-    if (m_value) {
-        m_value->set_type(v);
-    }
-}
-
-double Json::get_number() const {
-    if (!m_value) {
-        return 0;
-    }
-    return m_value->get_number();
-}
-
-void Json::set_number(double v) {
-    if (m_value) {
-        m_value->set_number(v);
-    }
-}
-
 Json::STATUS Json::parse_value(const std::string& str) {
     /*
     n ➔ null
@@ -81,6 +99,8 @@ Json::STATUS Json::parse_value(const std::string& str) {
             return parse_false(str);
         case 't':
             return parse_true(str);
+        case '\"':
+            return parse_str(str);
         case '\0':
             return PARSE_EXPECT_VALUE;
         default:
@@ -142,8 +162,39 @@ Json::STATUS Json::parse_number(const std::string& str) {
     m_context->curr_pos += n;
     m_value->set_type(JsonValue::JSON_NUMBER);
     m_value->set_number(tmp);
-    // std::cout << tmp << std::endl;
     return Json::PARSE_OK;
 }
+
+Json::STATUS Json::parse_str(const std::string& str) {
+    // std::cerr << str << std::endl;
+    int sz = str.size();
+    if (sz < 2) {
+        return Json::PARSE_INVALID_VALUE;
+    }
+
+    int end = m_context->curr_pos + 1;
+    std::string tmp;
+    while (end < sz && str[end] != '\"') {
+        if (str[end] == '\\' 
+            /*&& (end + 1 < sz && str[end + 1] != '\"' && str[end + 1] != '\\')*/) {
+            tmp.push_back(str[end]);
+            end += 2;
+            continue;
+        }
+        // std::cout << end << "+" << str[end] << std::endl;
+        tmp.push_back(str[end]);
+        ++end;
+    }
+
+    if (end >= sz) {
+        return Json::PARSE_INVALID_VALUE;
+    }
+
+    set_type(JsonValue::JSON_STRING);
+    set_str(tmp);
+    m_context->curr_pos += end + 1;
+    return Json::PARSE_OK;
+}
+
 
 }  // end of namespace tihi

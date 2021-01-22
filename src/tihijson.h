@@ -32,7 +32,6 @@ public:
 
     double get_number() const { 
         if (m_type == JSON_NUMBER) {
-            std::cout << m_number << std::endl;
             return m_number;
         }
         return 0;
@@ -40,13 +39,32 @@ public:
     void set_number(double v) {
         if (m_type == JSON_NUMBER) {
             m_number = v;
-            // std::cout << m_number << std::endl;
         }
-    } 
+    }
+
+    const std::string& get_str() const { 
+        if (m_type == JSON_STRING) {
+            return str;
+        }
+        return str;
+    }
+    void set_str(const std::string v) {
+        if (m_type == JSON_STRING) {
+            str = v;
+        }
+    }
+
+    size_t get_str_size() const {
+        if (m_type == JSON_STRING) {
+            return str.size();
+        }
+        return 0;
+    }
 
 private:
     Type m_type;
     double m_number;
+    std::string str; 
 };
 
 class Json {
@@ -62,11 +80,15 @@ public:
         PARSE_ROOT_NOT_SINGULAR = 3     // 值 空白 之后还有字符
     };
 
-    STATUS parse(const std::string& str);
     JsonValue::Type get_type() const;
+    JsonValue::ptr get_value() const;
     void set_type(JsonValue::Type v);
     double get_number() const;
     void set_number(double v);
+    const std::string& get_str() const;
+    void set_str(std::string str);
+
+    STATUS parse(const std::string& str);
 
 private:
     STATUS parse_value(const std::string& str);
@@ -74,6 +96,7 @@ private:
     STATUS parse_false(const std::string& str);
     STATUS parse_true(const std::string& str);
     STATUS parse_number(const std::string& str);
+    STATUS parse_str(const std::string& str);
 
 private:
     JsonValue::ptr m_value;

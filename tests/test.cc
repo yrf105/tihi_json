@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include <cstring>
 #include <iostream>
 
 #include "../src/tihijson.h"
@@ -23,6 +24,10 @@ static uint32_t test_pass = 0;
 
 #define EXPECT_EQ_INT(expect, actual) \
     EXPECT_EQ_BASE((expect) == (actual), expect, actual)
+#define EXPECT_EQ_STR(expect, actual, alength)                     \
+    EXPECT_EQ_BASE(sizeof(expect) - 1 == alength &&                \
+                       std::string(expect) == std::string(expect), \
+                   expect, actual)
 
 #define TEST_PARSE_VALUE(status, type, str)      \
     do {                                         \
@@ -36,7 +41,7 @@ static uint32_t test_pass = 0;
                          tihi::JsonValue::JSON_ERROR, actual); \
     } while (0)
 
-#define TEST_PARSE_NOT_SINGULAR(actual)                              \
+#define TEST_PARSE_NOT_SINGULAR(actual)                        \
     do {                                                       \
         TEST_PARSE_VALUE(tihi::Json::PARSE_ROOT_NOT_SINGULAR,  \
                          tihi::JsonValue::JSON_ERROR, actual); \
@@ -55,13 +60,13 @@ static void test_parse_value() {
 
     TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_FALSE,
                      "false");
-    TEST_PARSE_VALUE( tihi::Json::PARSE_OK, tihi::JsonValue::JSON_FALSE,
+    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_FALSE,
                      "false  ");
     TEST_PARSE_NOT_SINGULAR("false  \r\n");
     TEST_PARSE_NOT_SINGULAR("false  l");
 
     TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_TRUE, "true");
-    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_TRUE, 
+    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_TRUE,
                      "true  ");
     TEST_PARSE_NOT_SINGULAR("true  \r\n");
     TEST_PARSE_NOT_SINGULAR("true  l");
@@ -119,14 +124,51 @@ static void test_parse_number() {
     TEST_PARSE_INVALID("nan");
 }
 
-static void test() {
-    test_parse_value();
-    test_parse_number();
+#define TEST_PARSE_STR(expect, actual)                                       \
+    do {                                                                     \
+        TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_STRING, \
+                         actual);                                            \
+        EXPECT_EQ_STR(expect, json->get_value()->get_str().c_str(),          \
+                      json->get_value()->get_str_size());                    \
+    } while (0)
+
+static void test_parse_str() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+    TEST_PARSE_STR("", "\"\"");
+    TEST_PARSE_STR("Hello", "\"Hello\"");
+    TEST_PARSE_STR("Hello\nWorld", "\"Hello\\nWorld\"");
+    TEST_PARSE_STR("\" \\ / \b \f \n \r \t", "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
 }
 
+static void test_parse_invalid_string_escape() {
+#if 0
+    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\v\"");
+    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
+    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
+    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\x12\"");
+#endif
+}
+
+static void test() {
+    // test_parse_value();
+    // test_parse_number();
+    test_parse_str();
+}
+
+
+static void mytest() {
+    std::string str;
+    str.push_back('a');
+    str.push_back('\0');
+    str.push_back('b');
+    std::cout << str.size() << std::endl;
+    std::cout << str[1] << std::endl;
+}
 
 int main(int argc, char** argv) {
     test();
     std::cout << test_pass << "/" << test_count << " passed\n";
+    // mytest();
     return main_ret;
 }
