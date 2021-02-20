@@ -27,7 +27,7 @@ static uint32_t test_pass = 0;
 
 #define EXPECT_EQ_STR(expect, actual, alength)                     \
     EXPECT_EQ_BASE(sizeof(expect) - 1 == alength &&                \
-                       std::string(expect) == std::string(expect), \
+                       std::string(expect) == std::string(actual), \
                    expect, actual)
 
 #define TEST_PARSE_VALUE(status, type, str)                 \
@@ -162,7 +162,7 @@ static void test_parse_number() {
     do {                                                                     \
         TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_STRING, \
                          actual);                                            \
-        EXPECT_EQ_STR(expect, json->get_value()->get_str().c_str(),          \
+        EXPECT_EQ_STR(expect, json->get_value()->get_str(),          \
                       json->get_value()->get_str_size());                    \
     } while (0)
 
@@ -187,10 +187,10 @@ static void test_parse_invalid_string_escape() {
 #if 1
     tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
     tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
-    TEST_PARSE_STR("\v", "\"\\v\"");
-    TEST_PARSE_STR("\'", "\"\\'\"");
-    TEST_PARSE_STR("\0", "\"\\0\"");
-    TEST_PARSE_STR("\x12", "\"\\x12\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\v\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\x12\"");
 #endif
 }
 
@@ -214,7 +214,7 @@ static void test() {
 
 
 static void mytest() {
-    std::string str = "\"Hello\\nWorld\"";
+    std::string str = "\x23";
     std::cout << str << std::endl;
     std::string tmp;
     for (size_t i = 0; i < str.size(); ++i) {

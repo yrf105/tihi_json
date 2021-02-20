@@ -41,7 +41,7 @@ public:
 private:
     Type m_type;
     double m_number;
-    std::string str;
+    std::string m_str;
 };
 
 class Json {

@@ -22,29 +22,33 @@ namespace tihi {
 
 JsonValue::Type JsonValue::get_type() const { return m_type; }
 
-void JsonValue::set_type(Type v) { m_type = v; }
+void JsonValue::set_type(Type v) {
+    std::string().swap(m_str);
+    m_type = v;
+}
 
 double JsonValue::get_number() const {
     ASSERT2(m_type == JSON_NUMBER, "类型错误");
     return m_number;
 }
 void JsonValue::set_number(double v) {
-    ASSERT2(m_type == JSON_NUMBER, "类型错误");
+    m_type = JSON_NUMBER;
+    std::string().swap(m_str);
     m_number = v;
 }
 
 const std::string& JsonValue::get_str() const {
     ASSERT2(m_type == JSON_STRING, "类型错误");
-    return str;
+    return m_str;
 }
 void JsonValue::set_str(const std::string v) {
-    ASSERT2(m_type == JSON_STRING, "类型错误");
-    str = v;
+    m_type = JSON_STRING;
+    m_str = v;
 }
 
 size_t JsonValue::get_str_size() const {
     ASSERT2(m_type == JSON_STRING, "类型错误");
-    return str.size();
+    return m_str.size();
 }
 
 
@@ -295,13 +299,16 @@ Json::STATUS Json::parse_number(const std::string& str) {
         return Json::PARSE_INVALID_VALUE;
     }
     m_context->curr_pos += n;
-    m_value->set_type(JsonValue::JSON_NUMBER);
     m_value->set_number(tmp);
     return Json::PARSE_OK;
 }
 
+static std::unordered_map<char, char> CHAR2ESCAPE {
+    {'b', '\b'}, {'f', '\f'}, {'n', '\n'}, {'r', '\r'}, {'t', '\t'},
+    {'\"', '\"'}, {'/', '/'}, {'\\', '\\'}
+};
+
 Json::STATUS Json::parse_str(const std::string& str) {
-    // std::cerr << str << std::endl;
     int sz = str.size();
     if (sz < 2) {
         return Json::PARSE_MISS_QUOTATION_MARK;
@@ -311,15 +318,21 @@ Json::STATUS Json::parse_str(const std::string& str) {
     std::string tmp;
     while (end < sz && str[end] != '\"') {
         if (str[end] == '\\') {
-            tmp.push_back(str[end]);
-            end += 2;
+            if (CHAR2ESCAPE.find(str[end + 1]) != CHAR2ESCAPE.end()) {
+                tmp.push_back(CHAR2ESCAPE[str[end + 1]]);
+                end += 2;
+            } else {
+                m_value->set_type(JsonValue::JSON_NULL);
+                return PARSE_INVALID_STRING_ESCAPE;
+            }
             continue;
         }
-        if (str[end] == '\b' /* && tmp.back() == '\\'*/) {
-            // std::cerr << "==========" << std::endl;
-            return Json::PARSE_INVALID_STRING_ESCAPE;
+
+        if (str[end] <= 31) {
+            m_value->set_type(JsonValue::JSON_NULL);
+            return PARSE_INVALID_STRING_CHAR;
         }
-        // std::cerr << str[end] << std::endl;
+
         tmp.push_back(str[end]);
         ++end;
     }
@@ -328,10 +341,8 @@ Json::STATUS Json::parse_str(const std::string& str) {
         return Json::PARSE_MISS_QUOTATION_MARK;
     }
 
-    m_value->set_type(JsonValue::JSON_STRING);
     m_value->set_str(tmp);
     m_context->curr_pos += end + 1;
-    // std::cerr << "==========" << std::endl;
     return Json::PARSE_OK;
 }
 
