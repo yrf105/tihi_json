@@ -1,9 +1,9 @@
 #ifndef TIHIJSON_TIHIJSON_H_
 #define TIHIJSON_TIHIJSON_H_
 
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 
 namespace tihi {
 
@@ -16,8 +16,9 @@ struct JsonContxt {
 class JsonValue {
 public:
     using ptr = std::shared_ptr<JsonValue>;
+    // json 只有 6 中数据类型
     enum Type {
-        JSON_ERROR = 0,
+        // JSON_ERROR = 0,
         JSON_NULL = 1,
         JSON_FALSE = 2,
         JSON_TRUE = 3,
@@ -27,69 +28,40 @@ public:
         JSON_OBJECT = 7
     };
 
-    Type get_type() const { return m_type; }
-    void set_type(Type v) { m_type = v; }
+    Type get_type() const;
+    void set_type(Type v);
 
-    double get_number() const { 
-        if (m_type == JSON_NUMBER) {
-            return m_number;
-        }
-        return 0;
-    }
-    void set_number(double v) {
-        if (m_type == JSON_NUMBER) {
-            m_number = v;
-        }
-    }
+    double get_number() const;
+    void set_number(double v);
 
-    const std::string& get_str() const { 
-        if (m_type == JSON_STRING) {
-            return str;
-        }
-        return str;
-    }
-    void set_str(const std::string v) {
-        if (m_type == JSON_STRING) {
-            str = v;
-        }
-    }
-
-    size_t get_str_size() const {
-        if (m_type == JSON_STRING) {
-            return str.size();
-        }
-        return 0;
-    }
+    const std::string& get_str() const;
+    void set_str(const std::string v);
+    size_t get_str_size() const;
 
 private:
     Type m_type;
     double m_number;
-    std::string str; 
+    std::string str;
 };
 
 class Json {
 public:
     using ptr = std::shared_ptr<Json>;
-    Json(JsonValue::ptr value, 
+    Json(JsonValue::ptr value,
          JsonContxt::ptr context = JsonContxt::ptr(new JsonContxt));
 
     enum STATUS {
         PARSE_OK = 0,
-        PARSE_EXPECT_VALUE = 1,         // 只含有空白
-        PARSE_INVALID_VALUE = 2,        // 不是合法字符
-        PARSE_ROOT_NOT_SINGULAR = 3,    // 值 空白 之后还有字符
+        PARSE_EXPECT_VALUE = 1,       // 只含有空白
+        PARSE_INVALID_VALUE = 2,      // 不是合法字符
+        PARSE_ROOT_NOT_SINGULAR = 3,  // 值 空白 之后还有字符
         PARSE_MISS_QUOTATION_MARK = 4,
         PARSE_INVALID_STRING_ESCAPE = 5,
         PARSE_INVALID_STRING_CHAR = 6,
+        PARSE_NUMBER_OUT_OF_RANGE = 7,
     };
 
-    JsonValue::Type get_type() const;
     JsonValue::ptr get_value() const;
-    void set_type(JsonValue::Type v);
-    double get_number() const;
-    void set_number(double v);
-    const std::string& get_str() const;
-    void set_str(std::string str);
 
     STATUS parse(const std::string& str);
 
