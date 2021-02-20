@@ -169,30 +169,37 @@ Json::STATUS Json::parse_str(const std::string& str) {
     // std::cerr << str << std::endl;
     int sz = str.size();
     if (sz < 2) {
-        return Json::PARSE_INVALID_VALUE;
+        return Json::PARSE_MISS_QUOTATION_MARK;
     }
 
     int end = m_context->curr_pos + 1;
     std::string tmp;
     while (end < sz && str[end] != '\"') {
-        if (str[end] == '\\' 
-            /*&& (end + 1 < sz && str[end + 1] != '\"' && str[end + 1] != '\\')*/) {
+        // std::cerr << end << str[end] << std::endl;
+        if (str[end] == '\\' ) {
+            // std::cerr << str[end] << std::endl;
             tmp.push_back(str[end]);
+            std::cerr << "pp " << tmp.back() << std::endl;
             end += 2;
             continue;
         }
-        // std::cout << end << "+" << str[end] << std::endl;
+        if (str[end] == '\b'/* && tmp.back() == '\\'*/) {
+            // std::cerr << "==========" << std::endl;
+            return Json::PARSE_INVALID_STRING_ESCAPE;
+        }
+        // std::cerr << str[end] << std::endl;
         tmp.push_back(str[end]);
         ++end;
     }
 
     if (end >= sz) {
-        return Json::PARSE_INVALID_VALUE;
+        return Json::PARSE_MISS_QUOTATION_MARK;
     }
 
     set_type(JsonValue::JSON_STRING);
     set_str(tmp);
     m_context->curr_pos += end + 1;
+    std::cerr << "==========" << std::endl;
     return Json::PARSE_OK;
 }
 

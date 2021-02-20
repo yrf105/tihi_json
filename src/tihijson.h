@@ -77,7 +77,10 @@ public:
         PARSE_OK = 0,
         PARSE_EXPECT_VALUE = 1,         // 只含有空白
         PARSE_INVALID_VALUE = 2,        // 不是合法字符
-        PARSE_ROOT_NOT_SINGULAR = 3     // 值 空白 之后还有字符
+        PARSE_ROOT_NOT_SINGULAR = 3,    // 值 空白 之后还有字符
+        PARSE_MISS_QUOTATION_MARK = 4,
+        PARSE_INVALID_STRING_ESCAPE = 5,
+        PARSE_INVALID_STRING_CHAR = 6,
     };
 
     JsonValue::Type get_type() const;

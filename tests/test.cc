@@ -113,6 +113,23 @@ static void test_parse_number() {
     TEST_PARSE_NUMBER_OK(1.234E+10, "1.234E+10");
     TEST_PARSE_NUMBER_OK(1.234E-10, "1.234E-10");
 
+#if 0
+    /* the smallest number > 1 */
+    TEST_PARSE_NUMBER_OK(1.0000000000000002, "1.0000000000000002"); 
+    /* minimum denormal */
+    TEST_PARSE_NUMBER_OK( 4.9406564584124654e-324, "4.9406564584124654e-324");
+    TEST_PARSE_NUMBER_OK(-4.9406564584124654e-324, "-4.9406564584124654e-324");
+    /* Max subnormal double */
+    TEST_PARSE_NUMBER_OK( 2.2250738585072009e-308, "2.2250738585072009e-308");  
+    TEST_PARSE_NUMBER_OK(-2.2250738585072009e-308, "-2.2250738585072009e-308");
+    TEST_PARSE_NUMBER_OK( 2.2250738585072014e-308, "2.2250738585072014e-308");
+    /* Min normal positive double */  
+    TEST_PARSE_NUMBER_OK(-2.2250738585072014e-308, "-2.2250738585072014e-308");
+    /* Max double */
+    TEST_PARSE_NUMBER_OK( 1.7976931348623157e+308, "1.7976931348623157e+308");  
+    TEST_PARSE_NUMBER_OK(-1.7976931348623157e+308, "-1.7976931348623157e+308");
+#endif
+
     TEST_PARSE_INVALID("1e-10000"); /* must underflow */
     TEST_PARSE_INVALID("+0");
     TEST_PARSE_INVALID("+1");
@@ -138,22 +155,51 @@ static void test_parse_str() {
     TEST_PARSE_STR("", "\"\"");
     TEST_PARSE_STR("Hello", "\"Hello\"");
     TEST_PARSE_STR("Hello\nWorld", "\"Hello\\nWorld\"");
-    TEST_PARSE_STR("\" \\ / \b \f \n \r \t", "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
+    TEST_PARSE_STR("\" \\ / \b \f \n \r \t",
+                   "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
+}
+
+
+#define TEST_ERROR(error, str)                                        \
+    do {                                                              \
+        EXPECT_EQ_INT(error, json->parse(str));                       \
+        EXPECT_EQ_INT(tihi::JsonValue::JSON_ERROR, json->get_type()); \
+    } while (0)
+
+static void test_parse_missing_quotation_mark() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+    TEST_ERROR(tihi::Json::PARSE_MISS_QUOTATION_MARK, "\"");
+    TEST_ERROR(tihi::Json::PARSE_MISS_QUOTATION_MARK, "\"abc");
 }
 
 static void test_parse_invalid_string_escape() {
-#if 0
-    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\v\"");
-    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
-    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
-    TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\x12\"");
+#if 1
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+    TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
+    // TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
+    // TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
+    // TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_ESCAPE, "\"\\x12\"");
+#endif
+}
+
+static void test_parse_invalid_string_char() {
+#if 1
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+    TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_CHAR, "\"\x01\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_STRING_CHAR, "\"\x1F\"");
 #endif
 }
 
 static void test() {
     // test_parse_value();
     // test_parse_number();
-    test_parse_str();
+    // test_parse_str();
+    // test_parse_missing_quotation_mark();
+    test_parse_invalid_string_escape();
+    // test_parse_invalid_string_char();
 }
 
 
