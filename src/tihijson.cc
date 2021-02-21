@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include  <sstream>
 
 namespace tihi {
 
@@ -303,6 +304,96 @@ Json::STATUS Json::parse_number(const std::string& str) {
     return Json::PARSE_OK;
 }
 
+std::unordered_map<char, uint8_t> CHAR2U8 {
+    {'0', 0}, {'1', 1}, {'2', 2}, {'3', 3}, {'4', 4}, {'5', 5}, {'6', 6},
+    {'7', 7}, {'8', 8}, {'9', 9}, {'A', 10}, {'a', 10}, {'B', 11}, {'b', 11},
+    {'C', 12}, {'c', 12}, {'D', 13}, {'d', 13}, {'E', 14}, {'e', 14}, {'F', 15},
+    {'f', 15},
+};
+
+static bool parse_hex4(const std::string& str, uint16_t& u) {
+    int n = str.size();
+    if (n != 4) {
+        return 0;
+    }
+
+    u = 0;
+    for (int i = 0; i < n; ++i) {
+        if (CHAR2U8.find(str[i]) == CHAR2U8.end()) {
+            u = 0;
+            return false;
+        }
+        u |= CHAR2U8[str[i]];
+        if (i == n - 1) {
+            break;
+        }
+        u = u << 4;
+    }
+
+    return true;
+}
+
+static const std::string decode_utf8(const std::string& str, int& pos) {
+    std::stringstream ss;
+    int n = str.size();
+    if (pos + 4 >= n) {
+        return ss.str();
+    } 
+
+    uint32_t u = 0;
+    uint16_t u_h = 0;
+    uint16_t u_l = 0;
+    if (!parse_hex4(str.substr(pos, 4), u_h)) {
+        return ss.str();
+    }
+    pos += 4;
+
+    if (u_h >= 0xd800 && u_h <= 0xdbff) {
+        if (pos + 1 >= n) {
+            return ss.str();
+        }
+
+        if (str[pos] == '\\' && str[pos + 1] == 'u') {
+            pos += 2;
+            if (pos + 4 >= n) {
+                return ss.str();
+            }
+            if(!parse_hex4(str.substr(pos, 4), u_l)) {
+                return ss.str();
+            }
+
+            if (!(u_l >= 0xdc00 && u_l <= 0xdfff)) {
+                return ss.str();
+            }
+
+            pos += 4;
+            u = 0x10000 + ((u_h - 0xD800) << 10) + (u_l - 0xDC00);
+        } else {
+            return ss.str();
+        }
+    } else {
+        u = u_h;
+    }
+
+    if (u >= 0x0000 && u <= 0x007f) {
+        ss << char(u & 0x7f);
+    } else if (u >= 0x0080 && u <= 0x07ff) {
+        ss << char(0xc0 | ((u >> 6) & 0x1f));
+        ss << char(0x80 | (u        & 0x3f));
+    } else if (u >= 0x0800 && u <= 0xffff) {
+        ss << char(0xe0 | ((u >> 12) & 0x0f));
+        ss << char(0x80 | ((u >> 6) & 0x3f));
+        ss << char(0x80 | ((u     ) & 0x3f));
+    } else if (u >= 0x10000 && 0x10ffff) {
+        ss << char(0xf0 | ((u >> 18) & 0x07));
+        ss << char(0x80 | ((u >> 12) & 0x3f));
+        ss << char(0x80 | ((u >> 6) & 0x3f));
+        ss << char(0x80 | ((u     ) & 0x3f));
+    }
+
+    return ss.str();
+}
+
 static std::unordered_map<char, char> CHAR2ESCAPE {
     {'b', '\b'}, {'f', '\f'}, {'n', '\n'}, {'r', '\r'}, {'t', '\t'},
     {'\"', '\"'}, {'/', '/'}, {'\\', '\\'}
@@ -321,6 +412,15 @@ Json::STATUS Json::parse_str(const std::string& str) {
             if (CHAR2ESCAPE.find(str[end + 1]) != CHAR2ESCAPE.end()) {
                 tmp.push_back(CHAR2ESCAPE[str[end + 1]]);
                 end += 2;
+            } else if (str[end + 1] == 'u') {
+                end += 2;
+                std::string tmp_utf8 = decode_utf8(str, end);
+                if (tmp_utf8.empty()) {
+                    m_value->set_type(JsonValue::JSON_NULL);
+                    return PARSE_INVALID_UNICODE_HEX;
+                }
+
+                tmp += tmp_utf8;
             } else {
                 m_value->set_type(JsonValue::JSON_NULL);
                 return PARSE_INVALID_STRING_ESCAPE;

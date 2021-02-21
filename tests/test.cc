@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <sstream>
 
 #include "../src/tihijson.h"
 
@@ -169,11 +170,18 @@ static void test_parse_number() {
 static void test_parse_str() {
     tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
     tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
-    TEST_PARSE_STR("", "\"\"");
-    TEST_PARSE_STR("Hello", "\"Hello\"");
-    TEST_PARSE_STR("Hello\nWorld", "\"Hello\\nWorld\"");
-    TEST_PARSE_STR("\" \\ / \b \f \n \r \t",
-                   "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
+    // TEST_PARSE_STR("", "\"\"");
+    // TEST_PARSE_STR("Hello", "\"Hello\"");
+    // TEST_PARSE_STR("Hello\nWorld", "\"Hello\\nWorld\"");
+    // TEST_PARSE_STR("\" \\ / \b \f \n \r \t",
+    //                "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
+    
+    // TEST_PARSE_STR("Hello\0World", "\"Hello\\u0000World\"");
+    TEST_PARSE_STR("\x24", "\"\\u0024\"");         /* Dollar sign U+0024 */
+    TEST_PARSE_STR("\xC2\xA2", "\"\\u00A2\"");     /* Cents sign U+00A2 */
+    TEST_PARSE_STR("\xE2\x82\xAC", "\"\\u20AC\""); /* Euro sign U+20AC */
+    TEST_PARSE_STR("\xF0\x9D\x84\x9E", "\"\\uD834\\uDD1E\"");  /* G clef sign U+1D11E */
+    TEST_PARSE_STR("\xF0\x9D\x84\x9E", "\"\\ud834\\udd1e\"");  /* G clef sign U+1D11E */
 }
 
 static void test_parse_missing_quotation_mark() {
@@ -203,30 +211,103 @@ static void test_parse_invalid_string_char() {
 #endif
 }
 
+static void test_access_null() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+
+    json->get_value()->set_str("a");
+    json->get_value()->set_type(tihi::JsonValue::JSON_NULL);
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_NULL, json->get_value()->get_type());
+}
+
+static void test_access_boolean() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+
+    json->get_value()->set_str("a");
+    json->get_value()->set_type(tihi::JsonValue::JSON_TRUE);
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_TRUE, json->get_value()->get_type());
+    json->get_value()->set_type(tihi::JsonValue::JSON_FALSE);
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_FALSE, json->get_value()->get_type());
+}
+
+static void test_access_number() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+
+    json->get_value()->set_str("a");
+    json->get_value()->set_number(1234.5);
+    EXPECT_EQ_DOUBLE(1234.5, json->get_value()->get_number());
+}
+
+static void test_access_string() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+
+    json->get_value()->set_str("");
+    EXPECT_EQ_STR("", json->get_value()->get_str(), json->get_value()->get_str_size());
+    json->get_value()->set_str("hello");
+    EXPECT_EQ_STR("hello", json->get_value()->get_str(), json->get_value()->get_str_size());
+}
+
+static void test_access() {
+    test_access_null();
+    test_access_boolean();
+    test_access_number();
+    test_access_string();
+}
+
+static void test_parse_invalid_unicode_hex() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u0\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u01\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u012\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u/000\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\uG000\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u0/00\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u0G00\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u00/0\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u00G0\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u000/\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u000G\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\u 123\"");
+}
+
+static void test_parse_invalid_unicode_surrogate() {
+    tihi::JsonValue::ptr json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
+    tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json(json_value));
+
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\uD800\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\uDBFF\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\uD800\\\\\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\uD800\\uDBFF\"");
+    TEST_ERROR(tihi::Json::PARSE_INVALID_UNICODE_HEX, "\"\\uD800\\uE000\"");
+}
+
 static void test() {
     // test_parse_value();
     // test_parse_number();
     test_parse_str();
-    test_parse_missing_quotation_mark();
-    test_parse_invalid_string_escape();
-    test_parse_invalid_string_char();
+    // test_parse_missing_quotation_mark();
+    // test_parse_invalid_string_escape();
+    // test_parse_invalid_string_char();
+    // test_access();
+    test_parse_invalid_unicode_hex();
+    test_parse_invalid_unicode_surrogate();
 }
 
 
 static void mytest() {
-    std::string str = "\x23";
-    std::cout << str << std::endl;
-    std::string tmp;
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (str[i] == '\\') {
-            // std::cout << str[i + 2] << std::endl;
-            // ++i;
-            // continue;
-        }
-        std::cout << str[i];
-        tmp.push_back(str[i]);
-    }
-    std::cout << tmp << std::endl; 
+    std::stringstream ss;
+    ss << char(0x24);
+    std::cout << ss.str() << std::endl;
+    
+    std::cout << "\x0024" << std::endl;
+
+    printf("%x\n", (0x24));
 }
 
 int main(int argc, char** argv) {

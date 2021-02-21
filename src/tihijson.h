@@ -59,6 +59,7 @@ public:
         PARSE_INVALID_STRING_ESCAPE = 5,
         PARSE_INVALID_STRING_CHAR = 6,
         PARSE_NUMBER_OUT_OF_RANGE = 7,
+        PARSE_INVALID_UNICODE_HEX = 8,
     };
 
     JsonValue::ptr get_value() const;
