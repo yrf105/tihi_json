@@ -4,6 +4,8 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
+#include <unordered_map>
 
 namespace tihi {
 
@@ -38,17 +40,29 @@ public:
     void set_str(const std::string v);
     size_t get_str_size() const;
 
+    const std::vector<ptr>& get_vec() const;
+    void set_vec(const std::vector<ptr> v);
+    size_t get_vec_size() const;
+    void push_back_vec(JsonValue::ptr v);
+
+    const std::unordered_map<std::string, ptr>& get_obj() const;
+    void set_obj(const std::unordered_map<std::string, ptr> v);
+    size_t get_obj_size() const;
+    void insert_obj(const std::string& k, JsonValue::ptr v);
+    const ptr get_value_from_obj_by_string(const std::string& s);
+
 private:
     Type m_type;
     double m_number;
     std::string m_str;
+    std::vector<ptr> m_vec; 
+    std::unordered_map<std::string, ptr> m_obj;
 };
 
 class Json {
 public:
     using ptr = std::shared_ptr<Json>;
-    Json(JsonValue::ptr value,
-         JsonContxt::ptr context = JsonContxt::ptr(new JsonContxt));
+    Json(JsonContxt::ptr context = JsonContxt::ptr(new JsonContxt));
 
     enum STATUS {
         PARSE_OK = 0,
@@ -60,22 +74,29 @@ public:
         PARSE_INVALID_STRING_CHAR = 6,
         PARSE_NUMBER_OUT_OF_RANGE = 7,
         PARSE_INVALID_UNICODE_HEX = 8,
+        PARSE_MISS_COMMA_OR_SQUARE_BRACKET = 9,
+        PARSE_MISS_KEY = 10,
+        PARSE_MISS_BRACES = 11,
+        PARSE_MISS_COLON = 12,
+        PARSE_MISS_COMMA_OR_CURLY_BRACKET = 13,
     };
 
-    JsonValue::ptr get_value() const;
-
-    STATUS parse(const std::string& str);
+    STATUS parse(const std::string& str, JsonValue::ptr json_value);
 
 private:
-    STATUS parse_value(const std::string& str);
-    STATUS parse_null(const std::string& str);
-    STATUS parse_false(const std::string& str);
-    STATUS parse_true(const std::string& str);
-    STATUS parse_number(const std::string& str);
-    STATUS parse_str(const std::string& str);
+    STATUS parse_value(const std::string& str, JsonValue::ptr json_value);
+    STATUS parse_null(const std::string& str, JsonValue::ptr json_value);
+    STATUS parse_false(const std::string& str, JsonValue::ptr json_value);
+    STATUS parse_true(const std::string& str, JsonValue::ptr json_value);
+    bool is_number(const std::string& str);
+    STATUS parse_number(const std::string& str, JsonValue::ptr json_value);
+    STATUS parse_str(const std::string& str, JsonValue::ptr json_value);
+    STATUS parse_str_raw(const std::string& str, std::string& ret);
+    STATUS parse_vec(const std::string& str, JsonValue::ptr json_value);
+    STATUS parse_obj(const std::string& str, JsonValue::ptr json_value);
 
 private:
-    JsonValue::ptr m_value;
+    // JsonValue::ptr m_value;
     JsonContxt::ptr m_context;
 };
 
