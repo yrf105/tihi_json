@@ -32,10 +32,10 @@ static uint32_t test_pass = 0;
                        std::string(expect) == std::string(actual), \
                    expect, actual)
 
-#define TEST_PARSE_VALUE(status, type, str)                 \
-    do {                                                    \
-        EXPECT_EQ_INT(status, json->parse(str, json_value));            \
-        EXPECT_EQ_INT(type, json_value->get_type()); \
+#define TEST_PARSE_VALUE(status, type, str)                  \
+    do {                                                     \
+        EXPECT_EQ_INT(status, json->parse(str, json_value)); \
+        EXPECT_EQ_INT(type, json_value->get_type());         \
     } while (0)
 
 #define TEST_ERROR(error, str)                                    \
@@ -61,13 +61,16 @@ static void test_parse_value() {
     TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_TRUE,
                      "true  ");
 
-    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_NULL, "null  \r\n");
+    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_NULL,
+                     "null  \r\n");
     TEST_ERROR(tihi::Json::PARSE_ROOT_NOT_SINGULAR, "null  l");
 
-    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_FALSE, "false  \r\n");
+    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_FALSE,
+                     "false  \r\n");
     TEST_ERROR(tihi::Json::PARSE_ROOT_NOT_SINGULAR, "false  l");
 
-    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_TRUE, "true  \r\n");
+    TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_TRUE,
+                     "true  \r\n");
     TEST_ERROR(tihi::Json::PARSE_ROOT_NOT_SINGULAR, "true  l");
 
     TEST_ERROR(tihi::Json::PARSE_INVALID_VALUE, "?");
@@ -84,7 +87,7 @@ static void test_parse_value() {
     do {                                                                \
         TEST_PARSE_VALUE(status, tihi::JsonValue::JSON_NUMBER, actual); \
         if (status == tihi::Json::PARSE_OK) {                           \
-            EXPECT_EQ_DOUBLE(expect, json_value->get_number());  \
+            EXPECT_EQ_DOUBLE(expect, json_value->get_number());         \
         }                                                               \
     } while (0)
 
@@ -165,8 +168,8 @@ static void test_parse_number() {
     do {                                                                     \
         TEST_PARSE_VALUE(tihi::Json::PARSE_OK, tihi::JsonValue::JSON_STRING, \
                          actual);                                            \
-        EXPECT_EQ_STR(expect, json_value->get_str(),                  \
-                      json_value->get_str_size());                    \
+        EXPECT_EQ_STR(expect, json_value->get_str(),                         \
+                      json_value->get_str_size());                           \
     } while (0)
 
 static void test_parse_str() {
@@ -249,11 +252,9 @@ static void test_access_string() {
     tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json());
 
     json_value->set_str("");
-    EXPECT_EQ_STR("", json_value->get_str(),
-                  json_value->get_str_size());
+    EXPECT_EQ_STR("", json_value->get_str(), json_value->get_str_size());
     json_value->set_str("hello");
-    EXPECT_EQ_STR("hello", json_value->get_str(),
-                  json_value->get_str_size());
+    EXPECT_EQ_STR("hello", json_value->get_str(), json_value->get_str_size());
 }
 
 static void test_access() {
@@ -307,25 +308,35 @@ static void test_parse_array() {
     json_value.reset();
 
     json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
-    EXPECT_EQ_INT(tihi::Json::PARSE_OK, json->parse("[null, true, false, \"hello\", 19]", json_value));
+    EXPECT_EQ_INT(
+        tihi::Json::PARSE_OK,
+        json->parse("[null, true, false, \"hello\", 19]", json_value));
     EXPECT_EQ_INT(tihi::JsonValue::JSON_ARRAY, json_value->get_type());
     EXPECT_EQ_SIZE_T(5, json_value->get_vec_size());
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_NULL, json_value->get_vec()[0]->get_type());
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_TRUE, json_value->get_vec()[1]->get_type());
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_FALSE, json_value->get_vec()[2]->get_type());
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_STRING, json_value->get_vec()[3]->get_type());
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_NUMBER, json_value->get_vec()[4]->get_type());
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_NULL,
+                  json_value->get_vec()[0]->get_type());
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_TRUE,
+                  json_value->get_vec()[1]->get_type());
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_FALSE,
+                  json_value->get_vec()[2]->get_type());
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_STRING,
+                  json_value->get_vec()[3]->get_type());
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_NUMBER,
+                  json_value->get_vec()[4]->get_type());
     json_value.reset();
 
     json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
-    EXPECT_EQ_INT(tihi::Json::PARSE_OK, json->parse("[[], [0], [0, 1], [0,1,2]]", json_value));
+    EXPECT_EQ_INT(tihi::Json::PARSE_OK,
+                  json->parse("[[], [0], [0, 1], [0,1,2]]", json_value));
     EXPECT_EQ_INT(tihi::JsonValue::JSON_ARRAY, json_value->get_type());
     EXPECT_EQ_SIZE_T(4, json_value->get_vec_size());
     std::vector<tihi::JsonValue::ptr> tmp_vec = json_value->get_vec();
     for (size_t i = 0; i < tmp_vec.size(); ++i) {
         for (size_t j = 0; j < i; ++j) {
-            EXPECT_EQ_INT(tihi::JsonValue::JSON_NUMBER, tmp_vec[i]->get_vec()[j]->get_type());
-            EXPECT_EQ_DOUBLE(static_cast<double>(j), tmp_vec[i]->get_vec()[j]->get_number());
+            EXPECT_EQ_INT(tihi::JsonValue::JSON_NUMBER,
+                          tmp_vec[i]->get_vec()[j]->get_type());
+            EXPECT_EQ_DOUBLE(static_cast<double>(j),
+                             tmp_vec[i]->get_vec()[j]->get_number());
         }
     }
 }
@@ -340,21 +351,23 @@ static void test_parse_obj() {
 
     json_value.reset();
     json_value = tihi::JsonValue::ptr(new tihi::JsonValue);
-    EXPECT_EQ_INT(tihi::Json::PARSE_OK, json->parse(
-        " { "
-        "\"n\" : null , "
-        "\"f\" : false , "
-        "\"t\" : true , "
-        "\"i\" : 123 , "
-        "\"s\" : \"abc\", "
-        "\"a\" : [ 1, 2, 3 ],"
-        "\"o\" : { \"1\" : 1, \"2\" : 2, \"3\" : 3 }"
-        " } "
-    , json_value));
+    EXPECT_EQ_INT(tihi::Json::PARSE_OK,
+                  json->parse(" { "
+                              "\"n\" : null , "
+                              "\"f\" : false , "
+                              "\"t\" : true , "
+                              "\"i\" : 123 , "
+                              "\"s\" : \"abc\", "
+                              "\"a\" : [ 1, 2, 3 ],"
+                              "\"o\" : { \"1\" : 1, \"2\" : 2, \"3\" : 3 }"
+                              " } ",
+                              json_value));
     EXPECT_EQ_INT(tihi::JsonValue::JSON_OBJECT, json_value->get_type());
     EXPECT_EQ_SIZE_T(7, json_value->get_obj_size());
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_OBJECT, json_value->get_value_from_obj_by_string("o")->get_type());
-    EXPECT_EQ_INT(tihi::JsonValue::JSON_NULL, json_value->get_value_from_obj_by_string("n")->get_type());
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_OBJECT,
+                  json_value->get_value_from_obj_by_string("o")->get_type());
+    EXPECT_EQ_INT(tihi::JsonValue::JSON_NULL,
+                  json_value->get_value_from_obj_by_string("n")->get_type());
 }
 
 static void test_parse_miss_comma_or_square_bracket() {
@@ -398,8 +411,72 @@ static void test_parse_miss_comma_or_curly_bracket() {
     TEST_ERROR(tihi::Json::PARSE_MISS_COMMA_OR_CURLY_BRACKET, "{\"a\":1");
     //  TODO
     // TEST_ERROR(tihi::Json::PARSE_MISS_COMMA_OR_CURLY_BRACKET, "{\"a\":1]");
-    // TEST_ERROR(tihi::Json::PARSE_MISS_COMMA_OR_CURLY_BRACKET, "{\"a\":1 \"b\"");
+    // TEST_ERROR(tihi::Json::PARSE_MISS_COMMA_OR_CURLY_BRACKET, "{\"a\":1
+    // \"b\"");
     TEST_ERROR(tihi::Json::PARSE_MISS_COMMA_OR_CURLY_BRACKET, "{\"a\":{}");
+}
+
+#define TEST_ROUNDTRIP(json1)                                                     \
+    do {                                                                    \
+        tihi::JsonValue::ptr json_value =                                   \
+            tihi::JsonValue::ptr(new tihi::JsonValue);                      \
+        tihi::Json::ptr json = tihi::Json::ptr(new tihi::Json);             \
+        EXPECT_EQ_INT(tihi::Json::PARSE_OK, json->parse(json1, json_value)); \
+        std::string json2;                                                  \
+        EXPECT_EQ_INT(tihi::Json::STRINGIFY_OK,                             \
+                      json->stringify(json2, json_value));                  \
+        EXPECT_EQ_STR(json1, json2, json2.size());                           \
+    } while (0)
+
+static void test_stringify_number() {
+    TEST_ROUNDTRIP("0");
+    TEST_ROUNDTRIP("-0");
+    TEST_ROUNDTRIP("1");
+    TEST_ROUNDTRIP("-1");
+    TEST_ROUNDTRIP("1.5");
+    TEST_ROUNDTRIP("-1.5");
+    TEST_ROUNDTRIP("3.25");
+    TEST_ROUNDTRIP("1e+20");
+    TEST_ROUNDTRIP("1.234e+20");
+    TEST_ROUNDTRIP("1.234e-20");
+
+    // TEST_ROUNDTRIP("1.0000000000000002"); /* the smallest number > 1 */
+    // TEST_ROUNDTRIP("4.9406564584124654e-324"); /* minimum denormal */
+    // TEST_ROUNDTRIP("-4.9406564584124654e-324");
+    // TEST_ROUNDTRIP("2.2250738585072009e-308");  /* Max subnormal double */
+    // TEST_ROUNDTRIP("-2.2250738585072009e-308");
+    // TEST_ROUNDTRIP("2.2250738585072014e-308");  /* Min normal positive double */
+    // TEST_ROUNDTRIP("-2.2250738585072014e-308");
+    // TEST_ROUNDTRIP("1.7976931348623157e+308");  /* Max double */
+    // TEST_ROUNDTRIP("-1.7976931348623157e+308");
+}
+
+static void test_stringify_string() {
+    TEST_ROUNDTRIP("\"\"");
+    TEST_ROUNDTRIP("\"Hello\"");
+    TEST_ROUNDTRIP("\"Hello\\nWorld\"");
+    TEST_ROUNDTRIP("\"\\\" \\\\ / \\b \\f \\n \\r \\t\"");
+    TEST_ROUNDTRIP("\"Hello\\u0000World\"");
+}
+
+static void test_stringify_array() {
+    TEST_ROUNDTRIP("[]");
+    TEST_ROUNDTRIP("[null,false,true,123,\"abc\",[1,2,3]]");
+}
+
+static void test_stringify_object() {
+    TEST_ROUNDTRIP("{}");
+    TEST_ROUNDTRIP("{\"n\":null,\"f\":false,\"t\":true,\"i\":123,\"s\":\"abc\",\"a\":[1,2,3],\"o\":{\"1\":1,\"2\":2,\"3\":3}}");
+}
+
+static void test_stringify() {
+    TEST_ROUNDTRIP("null");
+    TEST_ROUNDTRIP("true");
+    TEST_ROUNDTRIP("false");
+    test_stringify_number();
+    test_stringify_string();
+    test_stringify_array();
+    test_stringify_object();
 }
 
 static void test() {
@@ -418,6 +495,8 @@ static void test() {
     test_parse_miss_key();
     test_parse_miss_colon();
     test_parse_miss_comma_or_curly_bracket();
+
+    test_stringify();
 }
 
 struct MyStruct {

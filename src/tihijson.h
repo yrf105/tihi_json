@@ -30,7 +30,7 @@ public:
         JSON_OBJECT = 7
     };
 
-    Type get_type() const;
+    int get_type() const;
     void set_type(Type v);
 
     double get_number() const;
@@ -79,9 +79,13 @@ public:
         PARSE_MISS_BRACES = 11,
         PARSE_MISS_COLON = 12,
         PARSE_MISS_COMMA_OR_CURLY_BRACKET = 13,
+
+        STRINGIFY_OK = 14,
+        STRINGIFY_ERROR = 14,
     };
 
     STATUS parse(const std::string& str, JsonValue::ptr json_value);
+    int stringify(std::string& str, JsonValue::ptr json_value);
 
 private:
     STATUS parse_value(const std::string& str, JsonValue::ptr json_value);
@@ -96,7 +100,6 @@ private:
     STATUS parse_obj(const std::string& str, JsonValue::ptr json_value);
 
 private:
-    // JsonValue::ptr m_value;
     JsonContxt::ptr m_context;
 };
 

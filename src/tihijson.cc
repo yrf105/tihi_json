@@ -27,7 +27,7 @@ namespace tihi {
             str.find_first_not_of(" \t\r\n", m_context->curr_pos); \
     } while (0)
 
-JsonValue::Type JsonValue::get_type() const { return m_type; }
+int JsonValue::get_type() const { return m_type; }
 
 void JsonValue::set_type(Type v) {
     std::string().swap(m_str);
@@ -144,6 +144,126 @@ Json::STATUS Json::parse(const std::string& str, JsonValue::ptr json_value) {
     }
 
     return ret;
+}
+
+static std::unordered_map<char, std::string> ESCAPE2CHAR{
+    {'\b', "\\b"}, {'\f', "\\f"},  {'\n', "\\n"}, {'\r', "\\r"},
+    {'\t', "\\t"}, {'\"', "\\\""}, {'/', "/"},  {'\\', "\\\\"}};
+
+int Json::stringify(std::string& str, JsonValue::ptr json_value) {
+    std::string().swap(str);
+
+    if (json_value == nullptr) {
+        return Json::STRINGIFY_ERROR;
+    }
+
+    std::stringstream ss;
+
+    /*
+        JSON_NULL = 1,
+        JSON_FALSE = 2,
+        JSON_TRUE = 3,
+        JSON_NUMBER = 4,
+        JSON_STRING = 5,
+        JSON_ARRAY = 6,
+        JSON_OBJECT = 7
+    */
+    switch (json_value->get_type()) {
+        case JsonValue::JSON_NULL: {
+            ss << "null";
+            break;
+        }
+        case JsonValue::JSON_TRUE: {
+            ss << "true";
+            break;
+        }
+        case JsonValue::JSON_FALSE: {
+            ss << "false";
+            break;
+        }
+        case JsonValue::JSON_NUMBER: {
+            ss << json_value->get_number();
+            break;
+        }
+        case JsonValue::JSON_STRING: {
+            const std::string& str_tmp = json_value->get_str();
+            ss << "\"";
+            for (auto c : str_tmp) {
+                if (ESCAPE2CHAR.find(c) != ESCAPE2CHAR.end()) {
+                    ss << ESCAPE2CHAR[c];
+                } else if (c < 0x20) {
+                    char tmp_s[7];
+                    sprintf(tmp_s, "\\u%04X", c);
+                    ss << tmp_s;
+                } else {
+                    ss << c;
+                }
+            }
+            ss << "\"";
+            break;
+        }
+        case JsonValue::JSON_ARRAY: {
+            const std::vector<JsonValue::ptr>& tmp_vec = json_value->get_vec();
+            size_t sz = tmp_vec.size();
+
+            if (sz == 0) {
+                ss << "[]";
+                break;
+            }
+
+            ss << '[';
+            std::string tmp_str;
+            int ret = stringify(tmp_str, tmp_vec[0]);
+            if (ret != STRINGIFY_OK) {
+                return ret;
+            }
+            ss << tmp_str;
+
+            for (size_t i = 1; i < sz; ++i) {
+                ss << ',';
+                stringify(tmp_str, tmp_vec[i]);
+                ss << tmp_str;
+            }
+            ss << ']';
+
+            break;
+        }
+        case JsonValue::JSON_OBJECT: {
+            const std::unordered_map<std::string, JsonValue::ptr>& obj_tmp = 
+                json_value->get_obj();
+            size_t sz = obj_tmp.size();
+            
+            if (sz == 0) {
+                ss << "{}";
+                break;
+            }
+
+            ss << '{';
+            std::string tmp_str;
+            size_t pair_counts = 0;
+            for (const auto& p : obj_tmp) {
+                int ret = stringify(tmp_str, p.second);
+                if (ret != Json::STRINGIFY_OK) {
+                    return Json::STRINGIFY_ERROR;
+                }
+
+                if (pair_counts == sz - 1) {
+                    ss << '\"' << p.first << '\"' << ':' << tmp_str;
+                    ++pair_counts;
+                    break;
+                }
+                
+                ss << '\"' << p.first << '\"' << ':' << tmp_str << ',';
+                ++pair_counts;
+            }
+            ss << '}';
+            break;
+        }
+    }
+
+    str = ss.str();
+
+    return STRINGIFY_OK;
 }
 
 Json::STATUS Json::parse_value(const std::string& str,
